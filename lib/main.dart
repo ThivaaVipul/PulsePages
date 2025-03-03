@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pulsepages/screens/auth/login_page.dart';
 import 'package:pulsepages/screens/home_page.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,9 +21,23 @@ class MyApp extends StatelessWidget {
       title: 'PulsePages',
       theme: ThemeData(
         primaryColor: Colors.amber,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.amber,
+          primary: Colors.amber,
+          secondary: Colors.orange,
+          onPrimary: Colors.white,
+          onSecondary: Colors.black,
+        ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
       home: AuthWrapper(),
     );
   }

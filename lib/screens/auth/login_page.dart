@@ -25,12 +25,14 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
 
   void _showToast(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Center(child: Text(message)),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Center(child: Text(message)),
+          backgroundColor: isError ? Colors.red : Colors.green,
+        ),
+      );
+    }
   }
 
   Future<void> _signInWithEmailPassword() async {
@@ -51,10 +53,12 @@ class _LoginPageState extends State<LoginPage> {
 
       if (userCredential.user != null) {
         _showToast("Login successful!");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
       _showToast(_getFriendlyErrorMessage(e.code), isError: true);
@@ -90,16 +94,19 @@ class _LoginPageState extends State<LoginPage> {
 
       if (userCredential.user != null) {
         _showToast("Google sign-in successful!");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+          );
+        }
       }
     } catch (e) {
       _showToast("Google sign-in failed. Try again!", isError: true);
     }
-
-    setState(() => isLoading = false);
+    if (mounted) {
+      setState(() => isLoading = false);
+    }
   }
 
   String _getFriendlyErrorMessage(String errorCode) {

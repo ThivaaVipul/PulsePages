@@ -1,32 +1,36 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:pulsepages/screens/auth/login_page.dart';
+import 'package:pulsepages/screens/today_page.dart';
+import 'package:pulsepages/screens/journal_page.dart';
+import 'package:pulsepages/screens/profile_page.dart';
+import 'package:pulsepages/components/navbar.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final FirebaseAuth auth = FirebaseAuth.instance;
+  // ignore: library_private_types_in_public_api
+  _HomePageState createState() => _HomePageState();
+}
 
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [TodayPage(), JournalPage(), ProfilePage()];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Home"),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.exit_to_app),
-            onPressed: () async {
-              await auth.signOut();
-              Navigator.pushReplacement(
-                // ignore: use_build_context_synchronously
-                context,
-                MaterialPageRoute(builder: (context) => LoginPage()),
-              );
-            },
-          ),
-        ],
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: Navbar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
-      body: Center(child: Text("Welcome to Home Page!")),
     );
   }
 }

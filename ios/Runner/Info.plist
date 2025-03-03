@@ -6,6 +6,15 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Pulsepages</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to track today's events.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We need your location to track today's events.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
