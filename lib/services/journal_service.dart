@@ -1,23 +1,22 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:pulsepages/services/cloudinary_service.dart';
 
 class JournalService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Future<List<String>> uploadImages(List<File> images) async {
     List<String> imageUrls = [];
 
     for (var image in images) {
-      final ref = _storage.ref().child(
-        'journal_images/${DateTime.now().millisecondsSinceEpoch}.jpg',
-      );
-      await ref.putFile(image);
-      String url = await ref.getDownloadURL();
-      imageUrls.add(url);
+      try {
+        String url = await CloudinaryService.uploadImage(image);
+        imageUrls.add(url);
+      } catch (e) {
+        throw Exception('Failed to upload image: $e');
+      }
     }
 
     return imageUrls;
