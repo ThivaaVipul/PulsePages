@@ -37,6 +37,9 @@ class _JournalPageState extends State<JournalPage> {
   Future<void> _fetchJournalForSelectedDate() async {
     setState(() {
       _isLoading = true;
+      _generatedJournalJson = null;
+      _quillController = quill.QuillController.basic();
+      _imageUrls = [];
     });
 
     final userId = _auth.currentUser?.uid;
@@ -111,6 +114,8 @@ class _JournalPageState extends State<JournalPage> {
         backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
+        leading: _buildMonthDropdown(),
+        leadingWidth: 100,
         actions: [
           if (_generatedJournalJson != null)
             IconButton(
@@ -281,6 +286,54 @@ class _JournalPageState extends State<JournalPage> {
     );
   }
 
+  Widget _buildMonthDropdown() {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return Padding(
+      padding: EdgeInsets.only(left: 20),
+      child: DropdownButton<String>(
+        value: DateFormat('MMM').format(_selectedDate),
+        onChanged: (String? newValue) {
+          if (newValue != null) {
+            final monthIndex = months.indexOf(newValue) + 1;
+            final newDate = DateTime(
+              _selectedDate.year,
+              monthIndex,
+              _selectedDate.day,
+            );
+            setState(() {
+              _selectedDate = newDate;
+            });
+            _fetchJournalForSelectedDate();
+          }
+        },
+        items:
+            months.map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value, style: TextStyle(color: Colors.white)),
+              );
+            }).toList(),
+        dropdownColor: Theme.of(context).primaryColor,
+        icon: Icon(Icons.arrow_drop_down, color: Colors.white),
+        underline: SizedBox(),
+      ),
+    );
+  }
+
   Widget _buildGenerateJournalButton() {
     return Center(
       child: Column(
@@ -443,6 +496,18 @@ class _JournalPageState extends State<JournalPage> {
       """;
           })
           .join('\n\n');
+
+      if (eventSummaries.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No events found to generate a journal.')),
+          );
+        }
+        return;
+      }
 
       const String apiUrl = "https://openrouter.ai/api/v1/chat/completions";
       const String apiKey = Constants.chatApiKey;
