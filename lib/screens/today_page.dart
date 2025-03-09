@@ -25,7 +25,7 @@ class _TodayPageState extends State<TodayPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Today's Journal",
+          "Today's Events",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
         ),
         centerTitle: true,

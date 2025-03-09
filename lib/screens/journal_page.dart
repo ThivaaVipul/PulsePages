@@ -59,10 +59,11 @@ class _JournalPageState extends State<JournalPage> {
         final journalData = journalSnapshot.data() as Map<String, dynamic>;
         setState(() {
           _generatedJournalJson = journalData['content'];
+
+          final decodedJson = jsonDecode(_generatedJournalJson!);
+
           _quillController = quill.QuillController(
-            document: quill.Document.fromJson(
-              jsonDecode(_generatedJournalJson!),
-            ),
+            document: quill.Document.fromJson(decodedJson),
             selection: TextSelection.collapsed(offset: 0),
             readOnly: true,
           );
@@ -87,9 +88,11 @@ class _JournalPageState extends State<JournalPage> {
         _imageUrls = imageUrls;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching journal or images')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching journal or images')),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -490,10 +493,11 @@ class _JournalPageState extends State<JournalPage> {
       final eventSummaries = events
           .map((event) {
             return """
-        **Event Description:** ${event['description']}
-        **Caption:** ${event['caption']}
-        **Location:** ${event['placeName'] ?? 'No location'}
-      """;
+    **Event Description:** ${event['description']}
+    **Caption:** ${event['caption'] ?? 'No Caption'}
+    **PlaceName:** ${event['placeName'] ?? 'No PlaceName'}
+    **Address:** ${event['placeAddress'] ?? 'No Address'}
+  """;
           })
           .join('\n\n');
 
@@ -518,46 +522,52 @@ class _JournalPageState extends State<JournalPage> {
           {
             "role": "user",
             "content": """
-        Generate a well-structured journal entry summarizing the following events for the day. 
-        Use rich text formatting (e.g., bold, italic, underline, strikethrough, headings, colors, lists, links) and organize the content into paragraphs.
-        Include details about the events, emotions, and locations. Make it engaging and reflective.
+    Generate a well-structured journal entry summarizing the following events for the day. 
+    Use rich text formatting (e.g., bold, italic, underline, strikethrough, headings, colors, lists, links) and organize the content into paragraphs.
+    Include details about the events, emotions, and locations. Make it engaging and reflective.
+    
+    **IMPORTANT: Use actual Unicode emoji characters only.** Examples: 😊 🌳 🍕 🇫🇷 ❤️ 
+    Do NOT use any emoji-like sequences that look like "ð«ð·" or other encoded/escaped forms.
+    When including flag emojis like the French flag, write the actual character 🇫🇷 not a code.
 
-        **Events:**
-        $eventSummaries
+    **Events:**
+    $eventSummaries
 
-        **Output Format:**
-        Return the journal content as a JSON array compatible with Flutter Quill's Delta format.
-        Example:
-        [
-          {"insert": "Journal Title\\n", "attributes": {"header": 1, "color": "#007bff"}},
-          {"insert": "Today was a great day!\\n"},
-          {"insert": "I visited ", "attributes": {"bold": true}},
-          {"insert": "Central Park", "attributes": {"italic": true, "color": "#28a745"}},
-          {"insert": " and had a wonderful time.\\n"},
-          {"insert": "Here are some highlights:\\n"},
-          {"insert": "• Ate delicious food \\n", "attributes": {"list": "bullet"}},
-          {"insert": "• Took a long walk \\n", "attributes": {"list": "bullet"}},
-          {"insert": "• Met an old friend \\n", "attributes": {"list": "bullet"}},
-          {"insert": "\\n"},
-          {"insert": "Check out more about Central Park ", "attributes": {"italic": true}},
-          {"insert": "here", "attributes": {"link": "https://en.wikipedia.org/wiki/Central_Park"}},
-          {"insert": ".\\n"}
-        ]
+    **Output Format:**
+    Return the journal content as a JSON array compatible with Flutter Quill's Delta format.
+    Example:
+    [
+      {"insert": "Journal Title\\n", "attributes": {"header": 1, "color": "#007bff"}},
+      {"insert": "Today was a great day! 😊\\n"},
+      {"insert": "I visited ", "attributes": {"bold": true}},
+      {"insert": "Central Park 🌳", "attributes": {"italic": true, "color": "#28a745"}},
+      {"insert": " and had a wonderful time.\\n"},
+      {"insert": "Here are some highlights:\\n"},
+      {"insert": "• Ate delicious food 🍕 \\n", "attributes": {"list": "bullet"}},
+      {"insert": "• Took a long walk 🚶‍♂️ \\n", "attributes": {"list": "bullet"}},
+      {"insert": "• Met an old friend 👋 \\n", "attributes": {"list": "bullet"}},
+      {"insert": "\\n"},
+      {"insert": "Check out more about Central Park ", "attributes": {"italic": true}},
+      {"insert": "here", "attributes": {"link": "https://en.wikipedia.org/wiki/Central_Park"}},
+      {"insert": ".\\n"}
+    ]
 
-        **Important:**
-        - Don't include any emojis.
-        - Use proper spacing and punctuation.
-        - Use the provided events as the main content of the journal.
-        - Use the appropriate Quill Delta format for text attributes to make the journal engaging.
-        - Ensure the journal is well-structured and easy to read.
-        - Return only the JSON array. Do not include any additional text or explanations.
-        - Ensure the JSON is valid and properly formatted.
-        - Ensure the last line ends with a newline character (\\n).
-      """,
+    **Important:**
+    - Use ONLY actual Unicode emoji characters, not emoji codes or representations.
+    - Ensure all emojis are represented as their actual Unicode characters.
+    - Use proper spacing and punctuation.
+    - Use the provided events as the main content of the journal.
+    - Use the appropriate Quill Delta format for text attributes to make the journal engaging.
+    - Ensure the journal is well-structured and easy to read.
+    - Return only the JSON array. Do not include any additional text or explanations.
+    - Ensure the JSON is valid and properly formatted.
+    - Ensure the last line ends with a newline character (\\n).
+  """,
           },
         ],
         "temperature": 0.7,
         "max_tokens": 1000,
+        "response_format": {"type": "json_object"},
       };
 
       final response = await http.post(
@@ -570,7 +580,7 @@ class _JournalPageState extends State<JournalPage> {
       );
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         var generatedJournalJson =
             responseData["choices"][0]["message"]["content"]?.trim() ??
             jsonEncode([
@@ -589,11 +599,17 @@ class _JournalPageState extends State<JournalPage> {
         generatedJournalJson = generatedJournalJson.trim();
 
         try {
-          final parsedJson = jsonDecode(generatedJournalJson);
+          final parsedJson = jsonDecode(
+            utf8.decode(utf8.encode(generatedJournalJson)),
+          );
           if (parsedJson is! List) {
             throw FormatException(
               "Invalid JSON format: Expected a JSON array.",
             );
+          }
+
+          for (var item in parsedJson) {
+            if (item.containsKey("insert") && item["insert"] is String) {}
           }
 
           if (parsedJson.isNotEmpty) {
@@ -630,7 +646,7 @@ class _JournalPageState extends State<JournalPage> {
           }
         } catch (e) {
           final fallbackJson = jsonEncode([
-            {"insert": "$generatedJournalJson\n"},
+            {"insert": "Journal entry with emoji issue. Please regenerate.\n"},
           ]);
 
           final quillDocument = quill.Document.fromJson(
@@ -662,7 +678,7 @@ class _JournalPageState extends State<JournalPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Falling back to plain text due to invalid JSON.',
+                  'Error with journal formatting. Please try regenerating.',
                 ),
               ),
             );
