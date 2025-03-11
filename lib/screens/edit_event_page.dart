@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:pulsepages/services/cloudinary_service.dart';
 
 class EditEventPage extends StatefulWidget {
@@ -34,7 +37,6 @@ class _EditEventPageState extends State<EditEventPage> {
 
   File? _newImage;
   bool _isLoading = false;
-  bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -53,35 +55,100 @@ class _EditEventPageState extends State<EditEventPage> {
     );
   }
 
-  Future<void> _pickImage() async {
-    if (_isPickingImage) return;
-    setState(() {
-      _isPickingImage = true;
-    });
+  Future<void> _captureImageFromCamera() async {
+    PermissionStatus cameraStatus = await Permission.camera.request();
 
-    try {
-      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (cameraStatus.isGranted) {
+      final pickedFile = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
       if (pickedFile != null) {
         setState(() {
           _newImage = File(pickedFile.path);
         });
       }
-    } catch (e) {
+    } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to pick image: $e'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text('Camera permission is required to take photos'),
           ),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isPickingImage = false;
-        });
-      }
     }
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    final pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _newImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _showImageSourceOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Choose an option",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withOpacity(0.1),
+                    child: Icon(
+                      Icons.camera_alt,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  title: const Text("Take a photo"),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _captureImageFromCamera();
+                  },
+                ),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withOpacity(0.1),
+                    child: Icon(
+                      Icons.photo_library,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  title: const Text("Choose from gallery"),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImageFromGallery();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _deleteImageFromCloudinary(String imageUrl) async {
@@ -133,7 +200,7 @@ class _EditEventPageState extends State<EditEventPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Event updated successfully!'),
             backgroundColor: Colors.green,
           ),
@@ -180,7 +247,7 @@ class _EditEventPageState extends State<EditEventPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Event deleted successfully!'),
             backgroundColor: Colors.green,
           ),
@@ -214,7 +281,7 @@ class _EditEventPageState extends State<EditEventPage> {
               backgroundColor: Colors.black,
               appBar: AppBar(
                 backgroundColor: Colors.black,
-                iconTheme: IconThemeData(color: Colors.white),
+                iconTheme: const IconThemeData(color: Colors.white),
               ),
               body: Center(
                 child: PhotoView(
@@ -222,7 +289,9 @@ class _EditEventPageState extends State<EditEventPage> {
                       imageUrl.startsWith('http')
                           ? NetworkImage(imageUrl)
                           : FileImage(File(imageUrl)) as ImageProvider,
-                  backgroundDecoration: BoxDecoration(color: Colors.black),
+                  backgroundDecoration: const BoxDecoration(
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ),
@@ -234,13 +303,13 @@ class _EditEventPageState extends State<EditEventPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           "Edit Event",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Theme.of(context).primaryColor,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -251,15 +320,15 @@ class _EditEventPageState extends State<EditEventPage> {
           ),
         ),
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 "Edit Your Event",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               TextField(
                 controller: _descriptionController,
@@ -273,7 +342,7 @@ class _EditEventPageState extends State<EditEventPage> {
                 ),
                 maxLines: 2,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // Event Caption
               TextField(
@@ -288,7 +357,7 @@ class _EditEventPageState extends State<EditEventPage> {
                 ),
                 maxLines: 5,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // Place Name
               TextField(
@@ -302,7 +371,7 @@ class _EditEventPageState extends State<EditEventPage> {
                   fillColor: Colors.white,
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // Place Address
               TextField(
@@ -316,7 +385,7 @@ class _EditEventPageState extends State<EditEventPage> {
                   fillColor: Colors.white,
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // Image Section
               if (widget.eventData['imageUrl'] != null || _newImage != null)
@@ -347,9 +416,9 @@ class _EditEventPageState extends State<EditEventPage> {
                                 ),
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     GestureDetector(
-                      onTap: _pickImage,
+                      onTap: _showImageSourceOptions,
                       child: Container(
                         height: 50,
                         width: double.infinity,
@@ -369,12 +438,12 @@ class _EditEventPageState extends State<EditEventPage> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                   ],
                 )
               else
                 GestureDetector(
-                  onTap: _pickImage,
+                  onTap: _showImageSourceOptions,
                   child: Container(
                     height: 180,
                     width: double.infinity,
@@ -387,13 +456,13 @@ class _EditEventPageState extends State<EditEventPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.camera_alt_rounded,
+                          Icons.add_a_photo,
                           size: 50,
                           color: Colors.grey.shade600,
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 10),
                         Text(
-                          "Tap to select an image",
+                          "Tap to add an image",
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 16,
@@ -404,42 +473,42 @@ class _EditEventPageState extends State<EditEventPage> {
                   ),
                 ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Save and Delete Buttons
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator())
                   : Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: deleteEvent,
-                          icon: Icon(Icons.delete, color: Colors.white),
-                          label: Text(
+                          icon: const Icon(Icons.delete, color: Colors.white),
+                          label: const Text(
                             "Delete",
                             style: TextStyle(color: Colors.white),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
-                            padding: EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: updateEvent,
-                          icon: Icon(Icons.save, color: Colors.white),
-                          label: Text(
+                          icon: const Icon(Icons.save, color: Colors.white),
+                          label: const Text(
                             "Save",
                             style: TextStyle(color: Colors.white),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).primaryColor,
-                            padding: EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

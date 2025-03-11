@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -58,7 +60,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
         if (status.isGranted) {
           Position position = await Geolocator.getCurrentPosition(
-            // ignore: deprecated_member_use
             desiredAccuracy: LocationAccuracy.high,
           );
           setState(() {
@@ -114,13 +115,92 @@ class _CreateEventPageState extends State<CreateEventPage> {
     }
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImageFromGallery() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
       });
     }
+  }
+
+  Future<void> _captureImageFromCamera() async {
+    PermissionStatus cameraStatus = await Permission.camera.request();
+
+    if (cameraStatus.isGranted) {
+      final pickedFile = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Camera permission is required to take photos')),
+      );
+    }
+  }
+
+  void _showImageSourceOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Choose an option",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 20),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withOpacity(0.1),
+                    child: Icon(
+                      Icons.camera_alt,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  title: Text("Take a photo"),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _captureImageFromCamera();
+                  },
+                ),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withOpacity(0.1),
+                    child: Icon(
+                      Icons.photo_library,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  title: Text("Choose from gallery"),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImageFromGallery();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Map<String, dynamic> _positionToMap(Position? position) {
@@ -350,7 +430,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
             ),
             SizedBox(height: 20),
             GestureDetector(
-              onTap: _pickImage,
+              onTap: _showImageSourceOptions,
               child:
                   _image == null
                       ? Container(
@@ -365,13 +445,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.camera_alt_rounded,
+                              Icons.add_a_photo,
                               size: 50,
                               color: Colors.grey.shade600,
                             ),
                             SizedBox(height: 10),
                             Text(
-                              "Tap to select an image",
+                              "Tap to add a photo",
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 16,
@@ -395,7 +475,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             top: 8,
                             right: 8,
                             child: InkWell(
-                              onTap: _pickImage,
+                              onTap: _showImageSourceOptions,
                               child: CircleAvatar(
                                 backgroundColor: Colors.black54,
                                 child: Icon(

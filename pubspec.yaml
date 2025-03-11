@@ -56,6 +56,14 @@ dependencies:
   flutter_quill_extensions: ^11.0.0
   photo_view: ^0.15.0
   crypto: ^3.0.6
+  flutter_launcher_icons: ^0.14.3
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/logo_foreground.png"
 
 dev_dependencies:
   flutter_test:
