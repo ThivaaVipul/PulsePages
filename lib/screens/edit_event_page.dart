@@ -167,6 +167,8 @@ class _EditEventPageState extends State<EditEventPage> {
   }
 
   Future<void> updateEvent() async {
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _isLoading = true;
     });
@@ -226,6 +228,8 @@ class _EditEventPageState extends State<EditEventPage> {
   }
 
   Future<void> deleteEvent() async {
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _isLoading = true;
     });
@@ -319,205 +323,211 @@ class _EditEventPageState extends State<EditEventPage> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Edit Your Event",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              TextField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: "Event Description",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
+        child: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          behavior: HitTestBehavior.opaque,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Edit Your Event",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Event Caption
-              TextField(
-                controller: _captionController,
-                decoration: InputDecoration(
-                  labelText: "Event Caption",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                maxLines: 5,
-              ),
-              const SizedBox(height: 16),
-
-              // Place Name
-              TextField(
-                controller: _placeNameController,
-                decoration: InputDecoration(
-                  labelText: "Place Name",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Place Address
-              TextField(
-                controller: _placeAddressController,
-                decoration: InputDecoration(
-                  labelText: "Place Address",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Image Section
-              if (widget.eventData['imageUrl'] != null || _newImage != null)
-                Column(
-                  children: [
-                    GestureDetector(
-                      onTap:
-                          () => _showFullImage(
-                            _newImage != null
-                                ? _newImage!.path
-                                : widget.eventData['imageUrl'],
-                          ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child:
-                            _newImage != null
-                                ? Image.file(
-                                  _newImage!,
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                )
-                                : Image.network(
-                                  widget.eventData['imageUrl'],
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                ),
-                      ),
+                TextField(
+                  controller: _descriptionController,
+                  decoration: InputDecoration(
+                    labelText: "Event Description",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 10),
-                    GestureDetector(
-                      onTap: _showImageSourceOptions,
-                      child: Container(
-                        height: 50,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+
+                // Event Caption
+                TextField(
+                  controller: _captionController,
+                  decoration: InputDecoration(
+                    labelText: "Event Caption",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  maxLines: 5,
+                ),
+                const SizedBox(height: 16),
+
+                // Place Name
+                TextField(
+                  controller: _placeNameController,
+                  decoration: InputDecoration(
+                    labelText: "Place Name",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Place Address
+                TextField(
+                  controller: _placeAddressController,
+                  decoration: InputDecoration(
+                    labelText: "Place Address",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Image Section
+                if (widget.eventData['imageUrl'] != null || _newImage != null)
+                  Column(
+                    children: [
+                      GestureDetector(
+                        onTap:
+                            () => _showFullImage(
+                              _newImage != null
+                                  ? _newImage!.path
+                                  : widget.eventData['imageUrl'],
+                            ),
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade400),
+                          child:
+                              _newImage != null
+                                  ? Image.file(
+                                    _newImage!,
+                                    width: double.infinity,
+                                    height: 200,
+                                    fit: BoxFit.cover,
+                                  )
+                                  : Image.network(
+                                    widget.eventData['imageUrl'],
+                                    width: double.infinity,
+                                    height: 200,
+                                    fit: BoxFit.cover,
+                                  ),
                         ),
-                        child: Center(
-                          child: Text(
-                            'Change Image',
+                      ),
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: _showImageSourceOptions,
+                        child: Container(
+                          height: 50,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade400),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Change Image',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  )
+                else
+                  GestureDetector(
+                    onTap: _showImageSourceOptions,
+                    child: Container(
+                      height: 180,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_a_photo,
+                            size: 50,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            "Tap to add an image",
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 16,
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                  ],
-                )
-              else
-                GestureDetector(
-                  onTap: _showImageSourceOptions,
-                  child: Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade400),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ),
+
+                const SizedBox(height: 20),
+
+                // Save and Delete Buttons
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Row(
                       children: [
-                        Icon(
-                          Icons.add_a_photo,
-                          size: 50,
-                          color: Colors.grey.shade600,
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: deleteEvent,
+                            icon: const Icon(Icons.delete, color: Colors.white),
+                            label: const Text(
+                              "Delete",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          "Tap to add an image",
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: updateEvent,
+                            icon: const Icon(Icons.save, color: Colors.white),
+                            label: const Text(
+                              "Save",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-
-              const SizedBox(height: 20),
-
-              // Save and Delete Buttons
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: deleteEvent,
-                          icon: const Icon(Icons.delete, color: Colors.white),
-                          label: const Text(
-                            "Delete",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: updateEvent,
-                          icon: const Icon(Icons.save, color: Colors.white),
-                          label: const Text(
-                            "Save",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).primaryColor,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

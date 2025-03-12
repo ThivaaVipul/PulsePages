@@ -39,6 +39,7 @@ class _TodayPageState extends State<TodayPage> {
                 .collection('events')
                 .doc(userId)
                 .collection(todayDate)
+                .orderBy('timestamp', descending: true)
                 .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

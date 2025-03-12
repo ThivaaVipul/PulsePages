@@ -278,6 +278,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         Generate a single, well-structured caption based on the following event description and location. 
         The caption should be engaging, vivid, and descriptive, yet concise. 
         Avoid multiple options or formatting styles—return only **one** refined caption.
+        Avoid adding random date and location details.
 
         **Event Description:** "$description"
         **Event Location:** "$_placeName"
@@ -288,6 +289,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         Generate a single, well-structured caption based on the following event description. 
         The caption should be engaging, vivid, and descriptive, yet concise. 
         Avoid multiple options or formatting styles—return only **one** refined caption.
+        Avoid adding random date and location details.
 
         **Event Description:** "$description"
 
@@ -318,6 +320,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<void> _submitEvent() async {
+    FocusScope.of(context).unfocus();
+
     if (_description.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -410,124 +414,133 @@ class _CreateEventPageState extends State<CreateEventPage> {
         backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                labelText: "Event Description",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+      body: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        behavior: HitTestBehavior.opaque,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(
+                  labelText: "Event Description",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
+                onChanged: (value) {
+                  setState(() {
+                    _description = value;
+                  });
+                },
               ),
-              onChanged: (value) {
-                setState(() {
-                  _description = value;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            GestureDetector(
-              onTap: _showImageSourceOptions,
-              child:
-                  _image == null
-                      ? Container(
-                        height: 180,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade400),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.add_a_photo,
-                              size: 50,
-                              color: Colors.grey.shade600,
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              "Tap to add a photo",
-                              style: TextStyle(
+              SizedBox(height: 20),
+              GestureDetector(
+                onTap: _showImageSourceOptions,
+                child:
+                    _image == null
+                        ? Container(
+                          height: 180,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade400),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_a_photo,
+                                size: 50,
                                 color: Colors.grey.shade600,
-                                fontSize: 16,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Tap to add a photo",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                        : Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                _image!,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: InkWell(
+                                onTap: _showImageSourceOptions,
+                                child: CircleAvatar(
+                                  backgroundColor: Colors.black54,
+                                  child: Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      )
-                      : Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              _image!,
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: InkWell(
-                              onTap: _showImageSourceOptions,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.black54,
-                                child: Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+              ),
+              SizedBox(height: 20),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _storeLocation,
+                    onChanged: (value) {
+                      setState(() {
+                        _storeLocation = value ?? true;
+                        if (_storeLocation) {
+                          _getLocation();
+                        }
+                      });
+                    },
+                    activeColor: Theme.of(context).primaryColor,
+                  ),
+                  Text("Store Location"),
+                ],
+              ),
+              SizedBox(height: 20),
+              _isLoading
+                  ? SpinKitFadingCircle(
+                    color: Theme.of(context).primaryColor,
+                    size: 50.0,
+                  )
+                  : ElevatedButton(
+                    onPressed: _submitEvent,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-            ),
-            SizedBox(height: 20),
-            Row(
-              children: [
-                Checkbox(
-                  value: _storeLocation,
-                  onChanged: (value) {
-                    setState(() {
-                      _storeLocation = value ?? true;
-                      if (_storeLocation) {
-                        _getLocation();
-                      }
-                    });
-                  },
-                  activeColor: Theme.of(context).primaryColor,
-                ),
-                Text("Store Location"),
-              ],
-            ),
-            SizedBox(height: 20),
-            _isLoading
-                ? SpinKitFadingCircle(
-                  color: Theme.of(context).primaryColor,
-                  size: 50.0,
-                )
-                : ElevatedButton(
-                  onPressed: _submitEvent,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 15,
+                      ),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    child: Text(
+                      "Create Event",
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
                   ),
-                  child: Text(
-                    "Create Event",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-          ],
+            ],
+          ),
         ),
       ),
     );

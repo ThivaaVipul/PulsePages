@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:photo_view/photo_view.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:pulsepages/constants/constants.dart';
 import 'edit_journal_page.dart';
 
@@ -59,9 +61,7 @@ class _JournalPageState extends State<JournalPage> {
         final journalData = journalSnapshot.data() as Map<String, dynamic>;
         setState(() {
           _generatedJournalJson = journalData['content'];
-
           final decodedJson = jsonDecode(_generatedJournalJson!);
-
           _quillController = quill.QuillController(
             document: quill.Document.fromJson(decodedJson),
             selection: TextSelection.collapsed(offset: 0),
@@ -400,8 +400,16 @@ class _JournalPageState extends State<JournalPage> {
                             DateFormat('MMMM d, yyyy').format(_selectedDate),
                           ),
                         ),
-                        body: PhotoView(
-                          imageProvider: NetworkImage(_imageUrls[index]),
+                        body: PageView.builder(
+                          itemCount: _imageUrls.length,
+                          controller: PageController(initialPage: index),
+                          itemBuilder: (context, fullscreenIndex) {
+                            return PhotoView(
+                              imageProvider: NetworkImage(
+                                _imageUrls[fullscreenIndex],
+                              ),
+                            );
+                          },
                         ),
                       ),
                 ),
@@ -411,12 +419,25 @@ class _JournalPageState extends State<JournalPage> {
               padding: EdgeInsets.symmetric(horizontal: 8),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(_imageUrls[index], fit: BoxFit.cover),
+                child: CachedNetworkImage(
+                  imageUrl: _imageUrls[index],
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => _buildImageSkeleton(),
+                  errorWidget: (context, url, error) => Icon(Icons.error),
+                ),
               ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildImageSkeleton() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(color: Colors.white),
     );
   }
 
@@ -456,9 +477,7 @@ class _JournalPageState extends State<JournalPage> {
     setState(() {
       _isRegenerating = true;
     });
-
     await _generateJournal();
-
     if (mounted) {
       setState(() {
         _isRegenerating = false;
@@ -483,7 +502,6 @@ class _JournalPageState extends State<JournalPage> {
               .get();
 
       final events = eventsSnapshot.docs.map((doc) => doc.data()).toList();
-
       _imageUrls =
           events
               .where((event) => event['imageUrl'] != null)
@@ -493,11 +511,11 @@ class _JournalPageState extends State<JournalPage> {
       final eventSummaries = events
           .map((event) {
             return """
-    **Event Description:** ${event['description']}
-    **Caption:** ${event['caption'] ?? 'No Caption'}
-    **PlaceName:** ${event['placeName'] ?? 'No PlaceName'}
-    **Address:** ${event['placeAddress'] ?? 'No Address'}
-  """;
+**Event Description:** ${event['description']}
+**Caption:** ${event['caption'] ?? 'No Caption'}
+**PlaceName:** ${event['placeName'] ?? 'No PlaceName'}
+**Address:** ${event['placeAddress'] ?? 'No Address'}
+""";
           })
           .join('\n\n');
 
@@ -522,47 +540,47 @@ class _JournalPageState extends State<JournalPage> {
           {
             "role": "user",
             "content": """
-    Generate a well-structured journal entry summarizing the following events for the day. 
-    Use rich text formatting (e.g., bold, italic, underline, strikethrough, headings, colors, lists, links) and organize the content into paragraphs.
-    Include details about the events, emotions, and locations. Make it engaging and reflective.
-    
-    **IMPORTANT: Use actual Unicode emoji characters only.** Examples: 😊 🌳 🍕 🇫🇷 ❤️ 
-    Do NOT use any emoji-like sequences that look like "ð«ð·" or other encoded/escaped forms.
-    When including flag emojis like the French flag, write the actual character 🇫🇷 not a code.
+Generate a well-structured journal entry summarizing the following events for the day. Use rich text formatting (e.g., bold, italic, underline, strikethrough, headings, colors, lists, links) and organize the content into paragraphs. Include details about the events, emotions, and locations. Make it engaging and reflective.
 
-    **Events:**
-    $eventSummaries
+**IMPORTANT: Use actual Unicode emoji characters only.** Examples: 😊 🌳 🍕 🇫🇷 ❤️
+Do NOT use any emoji-like sequences that look like "ð«ð·" or other encoded/escaped forms. When including flag emojis like the French flag, write the actual character 🇫🇷 not a code.
 
-    **Output Format:**
-    Return the journal content as a JSON array compatible with Flutter Quill's Delta format.
-    Example:
-    [
-      {"insert": "Journal Title\\n", "attributes": {"header": 1, "color": "#007bff"}},
-      {"insert": "Today was a great day! 😊\\n"},
-      {"insert": "I visited ", "attributes": {"bold": true}},
-      {"insert": "Central Park 🌳", "attributes": {"italic": true, "color": "#28a745"}},
-      {"insert": " and had a wonderful time.\\n"},
-      {"insert": "Here are some highlights:\\n"},
-      {"insert": "• Ate delicious food 🍕 \\n", "attributes": {"list": "bullet"}},
-      {"insert": "• Took a long walk 🚶‍♂️ \\n", "attributes": {"list": "bullet"}},
-      {"insert": "• Met an old friend 👋 \\n", "attributes": {"list": "bullet"}},
-      {"insert": "\\n"},
-      {"insert": "Check out more about Central Park ", "attributes": {"italic": true}},
-      {"insert": "here", "attributes": {"link": "https://en.wikipedia.org/wiki/Central_Park"}},
-      {"insert": ".\\n"}
-    ]
+**Events:**
+$eventSummaries
 
-    **Important:**
-    - Use ONLY actual Unicode emoji characters, not emoji codes or representations.
-    - Ensure all emojis are represented as their actual Unicode characters.
-    - Use proper spacing and punctuation.
-    - Use the provided events as the main content of the journal.
-    - Use the appropriate Quill Delta format for text attributes to make the journal engaging.
-    - Ensure the journal is well-structured and easy to read.
-    - Return only the JSON array. Do not include any additional text or explanations.
-    - Ensure the JSON is valid and properly formatted.
-    - Ensure the last line ends with a newline character (\\n).
-  """,
+**Output Format:**
+Return the journal content as a JSON array compatible with Flutter Quill's Delta format. Example:
+[
+  {"insert": "Journal Title\\n", "attributes": {"header": 1, "color": "#007bff"}},
+  {"insert": "Today was a great day! 😊\\n"},
+  {"insert": "I visited ", "attributes": {"bold": true}},
+  {"insert": "Central Park 🌳", "attributes": {"italic": true, "color": "#28a745"}},
+  {"insert": " and had a wonderful time.\\n"},
+  {"insert": "Here are some highlights:\\n"},
+  {"insert": "• Ate delicious food 🍕 \\n", "attributes": {"list": "bullet"}},
+  {"insert": "• Took a long walk 🚶‍♂️ \\n", "attributes": {"list": "bullet"}},
+  {"insert": "• Met an old friend 👋 \\n", "attributes": {"list": "bullet"}},
+  {"insert": "\\n"},
+  {"insert": "Check out more about Central Park ", "attributes": {"italic": true}},
+  {"insert": "here", "attributes": {"link": "https://en.wikipedia.org/wiki/Central_Park"}},
+  {"insert": ".\\n"}
+]
+
+**Important:**
+- Use ONLY actual Unicode emoji characters, not emoji codes or representations.
+- Ensure all emojis are represented as their actual Unicode characters.
+- Use proper spacing and punctuation.
+- Don't use random dates or locations.
+- If the placename or address mentioned as "No PlaceName" or "No Address" then don't add it in the journal.
+- Use the provided events as the main content of the journal.
+- Use the appropriate Quill Delta format for text attributes to make the journal engaging.
+- Provide Reflections and Emotions about the events.
+- Ensure the journal is well-structured and easy to read.
+- Ensure at the end of the journal put a one line reflection about the day.
+- Return only the JSON array. Do not include any additional text or explanations.
+- Ensure the JSON is valid and properly formatted.
+- Ensure the last line ends with a newline character (\\n).
+""",
           },
         ],
         "temperature": 0.7,
@@ -596,12 +614,14 @@ class _JournalPageState extends State<JournalPage> {
             generatedJournalJson.length - 4,
           );
         }
+
         generatedJournalJson = generatedJournalJson.trim();
 
         try {
           final parsedJson = jsonDecode(
             utf8.decode(utf8.encode(generatedJournalJson)),
           );
+
           if (parsedJson is! List) {
             throw FormatException(
               "Invalid JSON format: Expected a JSON array.",
