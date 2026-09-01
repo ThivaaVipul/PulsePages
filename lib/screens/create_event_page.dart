@@ -219,48 +219,63 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<String> _generateCaptionFromImage(File image) async {
-    final uri = Uri.parse(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Constants.geminiApiKey}",
-    );
+    const String apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+    const String apiKey = Constants.chatApiKey;
 
     final base64Image = base64Encode(image.readAsBytesSync());
 
-    final request = http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {
-                'text':
-                    'Provide a **detailed and single** description of this image as you are the one journaling the events on your day and {$_description} this is your description. Do not list multiple options. Describe the main subject in a **concise yet informative** manner.',
-              },
-              {
-                'inline_data': {'mime_type': 'image/jpeg', 'data': base64Image},
-              },
-            ],
-          },
-        ],
-      }),
-    );
+    final Map<String, dynamic> requestBody = {
+      "model": "minimax/minimax-m3:free",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text":
+                  "Provide a detailed **single** description of this image as you are the one journaling the events on your day. My description: $_description. Do not list multiple options. Describe the main subject in a concise, informative, and natural manner. Keep it under 50 words.",
+            },
+            {
+              "type": "image_url",
+              "image_url": {"url": "data:image/jpeg;base64,$base64Image"},
+            },
+          ],
+        },
+      ],
+      "temperature": 0.7,
+      "max_tokens": 150,
+    };
 
-    final response = await request;
-    final responseBody = response.body;
-    final decodedResponse = jsonDecode(responseBody);
+    for (int i = 0; i < 3; i++) {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $apiKey",
+          "HTTP-Referer": "https://github.com/PulsePages",
+          "X-Title": "PulsePages App",
+        },
+        body: jsonEncode(requestBody),
+      );
 
-    if (response.statusCode == 200 &&
-        decodedResponse['candidates'] != null &&
-        decodedResponse['candidates'].isNotEmpty &&
-        decodedResponse['candidates'][0]['content']['parts'] != null &&
-        decodedResponse['candidates'][0]['content']['parts'].isNotEmpty) {
-      String generatedDescription =
-          decodedResponse['candidates'][0]['content']['parts'][0]['text'];
-
-      return generatedDescription.split('\n').first.trim();
-    } else {
-      throw Exception('Error generating caption: $decodedResponse');
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        String text =
+            responseData["choices"][0]["message"]["content"]
+                ?.toString()
+                .trim() ??
+            "No caption generated";
+        return text;
+      } else {
+        if (i == 2) {
+          throw Exception(
+            'Error generating caption after retries: ${response.body}',
+          );
+        }
+        await Future.delayed(Duration(milliseconds: 1500));
+      }
     }
+    throw Exception('Unknown error generating caption');
   }
 
   Future<String> _generateCaptionFromDescription(String description) async {
@@ -268,7 +283,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     const String apiKey = Constants.chatApiKey;
 
     final Map<String, dynamic> requestBody = {
-      "model": "google/gemini-2.0-flash-lite-preview-02-05:free",
+      "model": "minimax/minimax-m3:free",
       "messages": [
         {
           "role": "user",
@@ -298,25 +313,37 @@ class _CreateEventPageState extends State<CreateEventPage> {
         },
       ],
       "temperature": 0.7,
-      "max_tokens": 100,
+      "max_tokens": 150,
     };
 
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $apiKey",
-      },
-      body: jsonEncode(requestBody),
-    );
+    for (int i = 0; i < 3; i++) {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $apiKey",
+          "HTTP-Referer": "https://github.com/PulsePages",
+          "X-Title": "PulsePages App",
+        },
+        body: jsonEncode(requestBody),
+      );
 
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      return responseData["choices"][0]["message"]["content"]?.trim() ??
-          "No caption generated";
-    } else {
-      throw Exception('Error generating caption: ${response.body}');
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        return responseData["choices"][0]["message"]["content"]
+                ?.toString()
+                .trim() ??
+            "No caption generated";
+      } else {
+        if (i == 2) {
+          throw Exception(
+            'Error generating caption after retries: ${response.body}',
+          );
+        }
+        await Future.delayed(Duration(milliseconds: 1500));
+      }
     }
+    throw Exception('Unknown error generating caption');
   }
 
   Future<void> _submitEvent() async {

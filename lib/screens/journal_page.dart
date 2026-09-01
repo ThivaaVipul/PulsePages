@@ -535,7 +535,7 @@ class _JournalPageState extends State<JournalPage> {
       const String apiKey = Constants.chatApiKey;
 
       final Map<String, dynamic> requestBody = {
-        "model": "google/gemini-2.0-flash-lite-preview-02-05:free",
+        "model": "minimax/minimax-m3:free",
         "messages": [
           {
             "role": "user",
@@ -566,38 +566,43 @@ Return the journal content as a JSON array compatible with Flutter Quill's Delta
   {"insert": ".\\n"}
 ]
 
-**Important:**
+**Important Rules that you must STRICTLY obey:**
+- ABSOLUTELY NO MARKDOWN. Do NOT put asterisks (*), hashtags (#), or any styling symbols inside the "insert" text string.
+- You must use ONLY the "attributes" JSON object to apply bold, italic, or headings. 
 - Use ONLY actual Unicode emoji characters, not emoji codes or representations.
-- Ensure all emojis are represented as their actual Unicode characters.
-- Use proper spacing and punctuation.
+- Use proper spacing and punctuation without raw markdown symbols.
 - Don't use random dates or locations.
 - If the placename or address mentioned as "No PlaceName" or "No Address" then don't add it in the journal.
-- Use the provided events as the main content of the journal.
-- Use the appropriate Quill Delta format for text attributes to make the journal engaging.
 - Provide Reflections and Emotions about the events.
 - Ensure the journal is well-structured and easy to read.
 - Ensure at the end of the journal put a one line reflection about the day.
-- Return only the JSON array. Do not include any additional text or explanations.
-- Ensure the JSON is valid and properly formatted.
+- Return ONLY the raw JSON array. Do not include conversational text.
+- Ensure the last line ends with a newline character (\\n).
 - Ensure the last line ends with a newline character (\\n).
 """,
           },
         ],
         "temperature": 0.7,
         "max_tokens": 1000,
-        "response_format": {"type": "json_object"},
       };
 
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $apiKey",
-        },
-        body: jsonEncode(requestBody),
-      );
+      http.Response? response;
+      for (int i = 0; i < 3; i++) {
+        response = await http.post(
+          Uri.parse(apiUrl),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $apiKey",
+            "HTTP-Referer": "https://github.com/PulsePages",
+            "X-Title": "PulsePages App",
+          },
+          body: jsonEncode(requestBody),
+        );
+        if (response.statusCode == 200) break;
+        if (i < 2) await Future.delayed(const Duration(milliseconds: 1500));
+      }
 
-      if (response.statusCode == 200) {
+      if (response!.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         var generatedJournalJson =
             responseData["choices"][0]["message"]["content"]?.trim() ??
@@ -605,22 +610,17 @@ Return the journal content as a JSON array compatible with Flutter Quill's Delta
               {"insert": "No journal generated.\\n"},
             ]);
 
-        if (generatedJournalJson.startsWith('```json\n')) {
-          generatedJournalJson = generatedJournalJson.substring(8);
-        }
-        if (generatedJournalJson.endsWith('\n```')) {
+        int startIndex = generatedJournalJson.indexOf('[');
+        int endIndex = generatedJournalJson.lastIndexOf(']');
+        if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
           generatedJournalJson = generatedJournalJson.substring(
-            0,
-            generatedJournalJson.length - 4,
+            startIndex,
+            endIndex + 1,
           );
         }
-
-        generatedJournalJson = generatedJournalJson.trim();
 
         try {
-          final parsedJson = jsonDecode(
-            utf8.decode(utf8.encode(generatedJournalJson)),
-          );
+          final parsedJson = jsonDecode(generatedJournalJson);
 
           if (parsedJson is! List) {
             throw FormatException(
